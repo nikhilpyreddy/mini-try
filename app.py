@@ -21,7 +21,7 @@ else:
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secretkey"
 
-BASE_URL = "http://bitly-clone-flask.herokuapp.com/url/"
+BASE_URL = "https://b5-mini.herokuapp.com/url/"
 
 
 @app.route("/", methods=["GET", "POST"])
