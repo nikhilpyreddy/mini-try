@@ -1,3 +1,3 @@
-# Bit.ly Clone
+B5 MINI Project
 
-Available at https://bitly-clone-flask.herokuapp.com
+Available at https://b5-mini.herokuapp.com/

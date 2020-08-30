@@ -1,4 +1,4 @@
-# Bit.ly Clone API
+# URL Shortner
 
 **BASE_URL = http://0.0.0.0:1234**
 

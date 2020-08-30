@@ -183,6 +183,9 @@ def dashboard():
     urls = c.execute("SELECT * FROM urls WHERE user_id=:u_id", {"u_id": session.get("user_id")}).fetchall()
     return render_template("dashboard.html", BASE_URL=BASE_URL, urls=urls)
 
+@app.route("/team")
+def team():
+    return render_template("team.html")
 
 @app.route("/api", methods=["GET"])
 def api():
