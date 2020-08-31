@@ -23,6 +23,7 @@ app.config["SECRET_KEY"] = "secretkey"
 
 BASE_URL = "https://b5-mini.herokuapp.com/url/"
 
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
@@ -35,10 +36,12 @@ def index():
         auto_code = random_str()
 
         # check whether the code created is valid
-        codes = c.execute("SELECT * FROM urls WHERE auto_code=:auto_code OR code=:auto_code", {"auto_code" : auto_code}).fetchall()
+        codes = c.execute("SELECT * FROM urls WHERE auto_code=:auto_code OR code=:auto_code",
+                          {"auto_code": auto_code}).fetchall()
         while len(codes) != 0:
             auto_code = random_str()
-            codes = c.execute("SELECT * FROM urls WHERE auto_code=:auto_code OR code=:auto_code", {"auto_code" : auto_code}).fetchall()
+            codes = c.execute("SELECT * FROM urls WHERE auto_code=:auto_code OR code=:auto_code", {
+                              "auto_code": auto_code}).fetchall()
 
         # get the date and timestamp
         import time
@@ -53,7 +56,8 @@ def index():
         timestamp = time.strftime("%x %X", ts)
 
         # INSERT into urls with all the information and commit to the database
-        c.execute("INSERT INTO urls (original_url, auto_code, code, date, timestamp, user_id, click) VALUES (:o_url, :code, :code, :date, :time, :u_id, 0)", {"o_url": request.form.get("url"), "code": auto_code, "date": date, "time": timestamp, "u_id": session.get("user_id")})
+        c.execute("INSERT INTO urls (original_url, auto_code, code, date, timestamp, user_id, click) VALUES (:o_url, :code, :code, :date, :time, :u_id, 0)", {
+                  "o_url": request.form.get("url"), "code": auto_code, "date": date, "time": timestamp, "u_id": session.get("user_id")})
         conn.commit()
 
         # render different template based on wheter user logged in or not
@@ -70,27 +74,30 @@ def register():
     if request.method == "POST":
         # check if the form is valid
 
-            if not request.form.get("email") or not request.form.get("password") or not request.form.get("confirmation"):
-                return "please fill out all fields"
+        if not request.form.get("email") or not request.form.get("password") or not request.form.get("confirmation"):
+            return "please fill out all fields"
 
-            if request.form.get("password") != request.form.get("confirmation"):
-                return "password confirmation doesn't match password"
+        if request.form.get("password") != request.form.get("confirmation"):
+            return "password confirmation doesn't match password"
 
-            # check if email exist in the database
-            exist = c.execute("SELECT * FROM users WHERE email=:email", {"email": request.form.get("email")}).fetchall()
+        # check if email exist in the database
+        exist = c.execute("SELECT * FROM users WHERE email=:email",
+                          {"email": request.form.get("email")}).fetchall()
 
-            if len(exist) != 0:
-                return "user already registered"
+        if len(exist) != 0:
+            return "user already registered"
 
-            # hash the password
-            pwhash = generate_password_hash(request.form.get("password"), method="pbkdf2:sha256", salt_length=8)
+        # hash the password
+        pwhash = generate_password_hash(request.form.get(
+            "password"), method="pbkdf2:sha256", salt_length=8)
 
-            # insert the row
-            c.execute("INSERT INTO users (email, password) VALUES (:email, :password)", {"email": request.form.get("email"), "password": pwhash})
-            conn.commit()
+        # insert the row
+        c.execute("INSERT INTO users (email, password) VALUES (:email, :password)", {
+                  "email": request.form.get("email"), "password": pwhash})
+        conn.commit()
 
-            # return success
-            return "registered successfully!"
+        # return success
+        return "registered successfully!"
     else:
         return render_template("register.html")
 
@@ -104,7 +111,8 @@ def login():
             return "please fill out all required fields"
 
         # check if email exist in the database
-        user = c.execute("SELECT * FROM users WHERE email=:email", {"email": request.form.get("email")}).fetchall()
+        user = c.execute("SELECT * FROM users WHERE email=:email",
+                         {"email": request.form.get("email")}).fetchall()
 
         if len(user) != 1:
             return "you didn't register"
@@ -129,15 +137,18 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
+
 @app.route("/url/<string:code>")
 def url(code):
 
-    result = c.execute("SELECT * FROM urls WHERE code=:code", {"code": code}).fetchall()
+    result = c.execute("SELECT * FROM urls WHERE code=:code",
+                       {"code": code}).fetchall()
 
     if len(result) != 1:
         return "404"
 
-    c.execute("UPDATE urls SET click = :c WHERE url_id=:id", {"c": int(result[0][7]) + 1, "id": result[0][0]})
+    c.execute("UPDATE urls SET click = :c WHERE url_id=:id", {
+              "c": int(result[0][7]) + 1, "id": result[0][0]})
     conn.commit()
 
     return redirect(result[0][1])
@@ -147,7 +158,7 @@ def url(code):
 @login_required
 def update():
 
-    if request.method  == "POST":
+    if request.method == "POST":
 
         if not request.form.get("new"):
             return "please fill out ALL required fields"
@@ -155,12 +166,14 @@ def update():
         if not request.form.get("new").isalnum():
             return "You must provide ONLY alpha numeric value"
 
-        codes = c.execute("SELECT * FROM urls WHERE auto_code != :new AND code=:new", {"new": request.form.get("new")}).fetchall()
+        codes = c.execute("SELECT * FROM urls WHERE auto_code != :new AND code=:new",
+                          {"new": request.form.get("new")}).fetchall()
 
         if len(codes) != 0:
             return "code already exists"
 
-        c.execute("UPDATE urls SET code=:new WHERE auto_code=:code OR code=:code", {"new": request.form.get("new"), "code": request.form.get("code")})
+        c.execute("UPDATE urls SET code=:new WHERE auto_code=:code OR code=:code", {
+                  "new": request.form.get("new"), "code": request.form.get("code")})
         conn.commit()
 
         return redirect("/dashboard")
@@ -169,7 +182,8 @@ def update():
         if not request.args.get("id"):
             return "please fill out all required fields"
 
-        url = c.execute("SELECT * FROM urls WHERE url_id=:id", {"id": request.args.get("id")}).fetchall()
+        url = c.execute("SELECT * FROM urls WHERE url_id=:id",
+                        {"id": request.args.get("id")}).fetchall()
 
         if session.get("user_id") != url[0][6]:
             return "403"
@@ -180,26 +194,30 @@ def update():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    urls = c.execute("SELECT * FROM urls WHERE user_id=:u_id", {"u_id": session.get("user_id")}).fetchall()
+    urls = c.execute("SELECT * FROM urls WHERE user_id=:u_id",
+                     {"u_id": session.get("user_id")}).fetchall()
     return render_template("dashboard.html", BASE_URL=BASE_URL, urls=urls)
+
 
 @app.route("/team")
 def team():
     return render_template("team.html")
+
 
 @app.route("/api", methods=["GET"])
 def api():
     # Check is custom code available
     if request.args.get("custom") and not request.args.get("url"):
 
-        url = c.execute("SELECT * FROM urls WHERE auto_code = :custom OR code = :custom", {"custom": request.args.get("custom")}).fetchall()
+        url = c.execute("SELECT * FROM urls WHERE auto_code = :custom OR code = :custom",
+                        {"custom": request.args.get("custom")}).fetchall()
 
         if len(url) == 0:
             return jsonify(code=200, description="Your custom code is available as of now")
         return jsonify(code=400, error="Your custom code already exist")
 
     if not request.args.get("url"):
-            return jsonify(code=400, error="Please fill out url parameter")
+        return jsonify(code=400, error="Please fill out url parameter")
 
     if not validate_url(request.args.get("url")):
         return jsonify(code=400, error="Your URL is not valid")
@@ -208,14 +226,17 @@ def api():
 
         auto_code = random_str()
 
-        codes = c.execute("SELECT * FROM urls WHERE auto_code=:auto_code OR code=:auto_code", {"auto_code" : auto_code}).fetchall()
+        codes = c.execute("SELECT * FROM urls WHERE auto_code=:auto_code OR code=:auto_code",
+                          {"auto_code": auto_code}).fetchall()
 
         while len(codes) != 0:
             auto_code = random_str()
 
-            codes = c.execute("SELECT * FROM urls WHERE auto_code=:auto_code OR code=:auto_code", {"auto_code" : auto_code}).fetchall()
+            codes = c.execute("SELECT * FROM urls WHERE auto_code=:auto_code OR code=:auto_code", {
+                              "auto_code": auto_code}).fetchall()
 
-        c.execute("INSERT INTO urls (original_url, auto_code, code, click) VALUES (:o_url, :code, :code, 0)", {"o_url": request.args.get("url"), "code": auto_code})
+        c.execute("INSERT INTO urls (original_url, auto_code, code, click) VALUES (:o_url, :code, :code, 0)", {
+                  "o_url": request.args.get("url"), "code": auto_code})
 
         conn.commit()
 
@@ -223,12 +244,14 @@ def api():
 
     if request.args.get("custom"):
 
-        url = c.execute("SELECT * FROM urls WHERE auto_code = :custom OR code = :custom", {"custom": request.args.get("custom")}).fetchall()
+        url = c.execute("SELECT * FROM urls WHERE auto_code = :custom OR code = :custom",
+                        {"custom": request.args.get("custom")}).fetchall()
 
         if len(url) != 0:
             return jsonify(code=400, error="code already exists")
 
-        c.execute("INSERT INTO urls (original_url, auto_code, code, click) VALUES (:o_url, :code, :code, 0)", {"o_url": request.args.get("url"), "code": request.args.get("custom")})
+        c.execute("INSERT INTO urls (original_url, auto_code, code, click) VALUES (:o_url, :code, :code, 0)", {
+                  "o_url": request.args.get("url"), "code": request.args.get("custom")})
 
         conn.commit()
 
