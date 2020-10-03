@@ -28,42 +28,45 @@ BASE_URL = "https://b5-mini.herokuapp.com/url/"
 def index():
     if request.method == "POST":
 
-        # check whether all fields filled
-        if not request.form.get("url"):
-            "please fill out all required fields"
+        if len(request.form.get("url"))<80:
+            return "No need to shorten your url,it is already short"
+        else:
+            # check whether all fields filled
+            if not request.form.get("url"):
+                "please fill out all required fields"
 
-        # generate a code using one of the helper function
-        auto_code = random_str()
-
-        # check whether the code created is valid
-        codes = c.execute("SELECT * FROM urls WHERE auto_code=:auto_code OR code=:auto_code",
-                          {"auto_code": auto_code}).fetchall()
-        while len(codes) != 0:
+            # generate a code using one of the helper function
             auto_code = random_str()
-            codes = c.execute("SELECT * FROM urls WHERE auto_code=:auto_code OR code=:auto_code", {
+
+            # check whether the code created is valid
+            codes = c.execute("SELECT * FROM urls WHERE auto_code=:auto_code OR code=:auto_code",
+                          {"auto_code": auto_code}).fetchall()
+            while len(codes) != 0:
+                auto_code = random_str()
+                codes = c.execute("SELECT * FROM urls WHERE auto_code=:auto_code OR code=:auto_code", {
                               "auto_code": auto_code}).fetchall()
 
-        # get the date and timestamp
-        import time
-        from datetime import date
-        # get today's date
-        today = date.today()
-        # mm/dd/yyyy
-        date = today.strftime("%m/%d/%y")
-        # pure timestamp
-        ts = time.gmtime()
-        # readable timestamp
-        timestamp = time.strftime("%x %X", ts)
+            # get the date and timestamp
+            import time
+            from datetime import date
+            # get today's date
+            today = date.today()
+            # mm/dd/yyyy
+            date = today.strftime("%m/%d/%y")
+            # pure timestamp
+            ts = time.gmtime()
+            # readable timestamp
+            timestamp = time.strftime("%x %X", ts)
 
-        # INSERT into urls with all the information and commit to the database
-        c.execute("INSERT INTO urls (original_url, auto_code, code, date, timestamp, user_id, click) VALUES (:o_url, :code, :code, :date, :time, :u_id, 0)", {
+            # INSERT into urls with all the information and commit to the database
+            c.execute("INSERT INTO urls (original_url, auto_code, code, date, timestamp, user_id, click) VALUES (:o_url, :code, :code, :date, :time, :u_id, 0)", {
                   "o_url": request.form.get("url"), "code": auto_code, "date": date, "time": timestamp, "u_id": session.get("user_id")})
-        conn.commit()
+            conn.commit()
 
-        # render different template based on wheter user logged in or not
-        if session.get("user_id"):
-            return render_template("confirm.html", BASE_URL=BASE_URL, code=auto_code, original_url=request.form.get("url"))
-        return render_template("success.html", BASE_URL=BASE_URL, auto_code=auto_code, old=request.form.get("url"))
+            # render different template based on wheter user logged in or not
+            if session.get("user_id"):
+                return render_template("confirm.html", BASE_URL=BASE_URL, code=auto_code, original_url=request.form.get("url"))
+            return render_template("success.html", BASE_URL=BASE_URL, auto_code=auto_code, old=request.form.get("url"))
 
     else:
         return render_template("index.html")
@@ -97,7 +100,7 @@ def register():
         conn.commit()
 
         # return success
-        return "registered successfully!"
+        return redirect("/dashboard")
     else:
         return render_template("register.html")
 
@@ -216,11 +219,14 @@ def api():
             return jsonify(code=200, description="Your custom code is available as of now")
         return jsonify(code=400, error="Your custom code already exist")
 
-    if not request.args.get("url"):
+    if  not request.args.get("url"):
         return jsonify(code=400, error="Please fill out url parameter")
 
     if not validate_url(request.args.get("url")):
         return jsonify(code=400, error="Your URL is not valid")
+   
+    if len(request.args.get("url"))<80:
+        return jsonify(code=400, error="No need to shorten your url,it is already short")
 
     if not request.args.get("custom"):
 
